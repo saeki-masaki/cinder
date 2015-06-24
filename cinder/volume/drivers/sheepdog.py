@@ -208,6 +208,7 @@ class SheepdogDriver(driver.VolumeDriver):
 
     def create_volume(self, volume):
         """Create a sheepdog volume."""
+        """TODO: saeki @ add error handling"""
         self._try_execute('qemu-img', 'create',
                           "sheepdog:%s" % volume['name'],
                           '%sG' % volume['size'])
@@ -222,6 +223,7 @@ class SheepdogDriver(driver.VolumeDriver):
 
     def delete_volume(self, volume):
         """Delete a logical volume."""
+        """TODO: saeki @ add error handling"""
         self._delete(volume)
 
     def _resize(self, volume, size=None):

@@ -49,7 +49,10 @@ sheepdog_opts = [
     cfg.IntOpt('sheepdog_store_port',
                min=1, max=65535,
                default=7000,
-               help=('Port of sheep daemon.'))
+               help=('Port of sheep daemon.')),
+    cfg.BoolOpt('sheepdog_clone_to_image',
+                default=False,
+                help=('Use clone operation when upload volume to image.'))
 ]
 
 CONF = cfg.CONF
@@ -672,15 +675,25 @@ class SheepdogDriver(driver.VolumeDriver):
         """Copy the volume to the specified image."""
         image_id = image_meta['id']
         try:
-            with image_utils.temporary_file() as tmp:
-                self.client.convert('sheepdog:%s' % volume.name, tmp)
-                with open(tmp, 'rb') as image_file:
-                    image_service.update(context, image_id, {}, image_file)
+            if CONF.sheepdog_clone_to_image:
+                tmp = self.local_path(volume)
+                self.client.create_snapshot(volume.name, 'volume-to-image')
+                self.client.clone(volume.name, 'volume-to-image',
+                                  image_id, volume.size)
+                image_service.update(context, image_id, {}, tmp)
+            else:
+                with image_utils.temporary_file() as tmp:
+                    self.client.convert('sheepdog:%s' % volume.name, tmp)
+                    with open(tmp, 'rb') as image_file:
+                        image_service.update(context, image_id, {}, image_file)
         except Exception:
             with excutils.save_and_reraise_exception():
                 msg = _LE('Failed to copy volume: %(vdiname)s to '
                           'image: %(path)s.')
                 LOG.error(msg, {'vdiname': volume.name, 'path': tmp})
+        finally:
+            if CONF.sheepdog_clone_to_image:
+                self.client.delete_snapshot(volume.name, 'volume-to-image')
 
     def create_snapshot(self, snapshot):
         """Create a sheepdog snapshot."""

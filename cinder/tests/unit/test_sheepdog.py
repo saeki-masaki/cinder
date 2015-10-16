@@ -1909,6 +1909,19 @@ class SheepdogDriverTestCase(test.TestCase):
         ret = self.driver.local_path(fake_volume)
         self.assertEqual(expected_path, ret)
 
+    def test_initialize_connection(self):
+        fake_volume = self.test_data.TEST_VOLUME
+        expected = {
+            'driver_volume_type': 'sheepdog',
+            'data': {
+                'name': fake_volume.name,
+                'hosts': ["127.0.0.1"],
+                'ports': ["7000"],
+            }
+        }
+        actual = self.driver.initialize_connection(fake_volume, None)
+        self.assertDictMatch(expected, actual)
+
     @mock.patch.object(sheepdog.SheepdogClient, 'resize')
     @mock.patch.object(sheepdog, 'LOG')
     def test_extend_volume(self, fake_logger, fake_execute):

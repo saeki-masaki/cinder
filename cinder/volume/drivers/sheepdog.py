@@ -708,7 +708,9 @@ class SheepdogDriver(driver.VolumeDriver):
         return {
             'driver_volume_type': 'sheepdog',
             'data': {
-                'name': volume['name']
+                'name': volume['name'],
+                'hosts': [CONF.sheepdog_store_address],
+                'ports': [str(CONF.sheepdog_store_port)],
             }
         }
 
